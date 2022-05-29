@@ -2,49 +2,57 @@ const AuthorModel = require("../models/authorModel");
 const moment = require("moment")
 const BlogModel = require("../models/blogModel");
 const mongoose = require("mongoose");
+const validator = require('../Middleware/validation');
+const blogModel = require("../models/blogModel");
 
 
-// 1st
+
+const isValidObjectId = function (objectId) {
+    return mongoose.Types.ObjectId.isValid(objectId)
+}
+
+//====================================================create blogs============================================***
 
 
 const createBlogs = async function (req, res) {
     try {
         let data = req.body
+        
 
-        if (Object.keys(data).length != 0) {
-
-
-            if (data.title === undefined || data.tags === undefined || data.category === undefined ||
-                data.subcategory === undefined || data.title.length == 0 || data.tags.length == 0 || data.category.length == 0
-                || data.subcategory.length == 0 || data.authorId.length == 0) {
-                return res.status(400).send({ status: false, msg: "Mandatory field missing" })
-            }
-
-
-            let authorid = await AuthorModel.findById(data.authorId);
-            if (!authorid) {
-                return res.status(400).send({ status: false, msg: " AuthorId is required or not valid" });
-            }
-
-            if (data.isPublished == true) {
-                req.body.publishedAt = Date.now();
-                let createblogs = await BlogModel.create(data);
-
-                res.status(201).send({ status: true, data: createblogs });
-            }
-        } else {
-            return res.status(400).send({ status: false, msg: "BAD REQUEST" })
+        const {title,body,authorId,tags,category,subcategory} = data
+   
+        if(!validator.isValid(title)){
+            return res.status(400).send({status:false, msg:"title is required"})
         }
-
+        if(!validator.isValid(body)){
+            return res.status(400).send({status:false, msg:"body is required"})
+        }
+        if (!isValidObjectId(authorId)) {
+            return res.status(400).send({ status: false, message: `This ${authorId} is invalid` });
+        }
+        if(!validator.isValid(tags)){
+            return res.status(400).send({status:false, msg:"tags is required"})
+        }
+        if(!validator.isValid(category)){
+            return res.status(400).send({status:false, msg:"category is required"})
+        }
+        if(!validator.isValid(subcategory)){
+            return res.status(400).send({status:false, msg:"subCategory is required"})
+        }
+        
+        let blogCreate = await blogModel.create(data)
+        
+            res.status(201).send({status:true,data:blogCreate})
+        
     }
     catch (err) {
         return res.status(500).send({ status: false, msg: err.message });
     }
 };
-module.exports.createBlogs = createBlogs;
+ 
 
 
-// 2nd
+//======================================get blogs=================================================***
 
 const getBlogs = async function (req, res) {
     try {
@@ -65,9 +73,9 @@ const getBlogs = async function (req, res) {
         res.status(500).send({ status: false, msg: err.message })
     }
 }
-module.exports.getBlogs = getBlogs;
+ 
 
-
+//===============================================update blogs=============================================***
 
 const updateBlogs = async function (req, res) {
     try {
@@ -109,13 +117,16 @@ const updateBlogs = async function (req, res) {
         return res.status(500).send({ msg: err.message });
     }
 };
-module.exports.updateBlogs = updateBlogs
+ 
 
-// 4th
+//=================================================update======================================***
 
-const validateBlog = async function (req, res) {
+const daleteBlog = async function (req, res) {
     try {
         let blogId = req.params.blogId
+        if (!isValidObjectId(blogId)) {
+            return res.status(400).send({ status: false, message: `This ${blogId} is invalid` });
+        }
         let validateblogId = await BlogModel.findOne({ _id: blogId, isDeleted: false })
 
         if (!validateblogId) {
@@ -130,9 +141,11 @@ const validateBlog = async function (req, res) {
         res.status(500).send({ status: false, msg: err.message })
     }
 };
-module.exports.validateBlog = validateBlog;
+ 
 
-// 5th
+//=============================================delet blogs=========================================***
+
+
 const deleteBlogsByQuery = async function (req, res) {
     try {
         let data = req.query;
@@ -141,15 +154,10 @@ const deleteBlogsByQuery = async function (req, res) {
 
         if (Object.keys(data).length == 0) {
             //-> if data undefined
-            return res.status(400).send({
-                status: false,
-                msg: "no query params available "
-            });
+            return res.status(400).send({ status: false, msg: "no query params available "  });
         } else {
             //-> if tags defined
-            if (data.tags) {
-                data.tags = { $in: data.tags };
-            }
+            if (data.tags) { data.tags = { $in: data.tags }; }
 
             //-> if subcategory defined
             if (data.subcategory) {
@@ -175,5 +183,7 @@ const deleteBlogsByQuery = async function (req, res) {
         res.status(500).send({ status: false, msg: error.message });
     }
 };
-module.exports.deleteBlogsByQuery = deleteBlogsByQuery;
+
+
+module.exports = {createBlogs,getBlogs,updateBlogs,daleteBlog,deleteBlogsByQuery}
 

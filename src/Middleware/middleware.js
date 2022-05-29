@@ -34,7 +34,7 @@ const authUser = async function (req, res, next) {
         let blog = await BlogModel.findOne( {authorId: authorId, _id:blogId})
 
         if (!blog) {
-            return res.status(403).send({ status: false, msg: "Blog does not exist" })
+            return res.status(403).send({status: false, msg: "not authorized"})
         } 
 
         next()
@@ -53,8 +53,4 @@ module.exports = { authentication, authUser }
 
 
 
-
-// let authordata = blog.authorId.toString()
-// if (authordata != decode) {
-//     return res.send("Not Authorised!")
-// }
+ 
